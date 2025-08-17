@@ -8,9 +8,10 @@ import { headers } from "next/headers";
 // PUT /api/attempts/[id] - Update an attempt (only if it belongs to the current user)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -75,7 +76,7 @@ export async function PUT(
         updatedAt: new Date(),
       })
       .where(and(
-        eq(attempts.id, params.id),
+        eq(attempts.id, id),
         eq(attempts.userId, session.user.id)
       ))
       .returning();
@@ -102,7 +103,7 @@ export async function PUT(
       .from(attempts)
       .leftJoin(problems, eq(attempts.problemId, problems.id))
       .leftJoin(topics, eq(problems.topicId, topics.id))
-      .where(eq(attempts.id, params.id))
+      .where(eq(attempts.id, id))
       .limit(1);
 
     return NextResponse.json(attemptWithInfo[0]);
@@ -118,9 +119,10 @@ export async function PUT(
 // DELETE /api/attempts/[id] - Delete an attempt (only if it belongs to the current user)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -133,7 +135,7 @@ export async function DELETE(
     const deletedAttempt = await db
       .delete(attempts)
       .where(and(
-        eq(attempts.id, params.id),
+        eq(attempts.id, id),
         eq(attempts.userId, session.user.id)
       ))
       .returning();

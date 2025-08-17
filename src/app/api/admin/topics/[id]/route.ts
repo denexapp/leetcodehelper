@@ -8,9 +8,10 @@ import { headers } from "next/headers";
 // PUT /api/admin/topics/[id] - Update a topic
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -34,7 +35,7 @@ export async function PUT(
         name: name.trim(),
         updatedAt: new Date(),
       })
-      .where(eq(topics.id, params.id))
+      .where(eq(topics.id, id))
       .returning();
 
     if (updatedTopic.length === 0) {
@@ -63,9 +64,10 @@ export async function PUT(
 // DELETE /api/admin/topics/[id] - Delete a topic
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -76,7 +78,7 @@ export async function DELETE(
 
     const deletedTopic = await db
       .delete(topics)
-      .where(eq(topics.id, params.id))
+      .where(eq(topics.id, id))
       .returning();
 
     if (deletedTopic.length === 0) {

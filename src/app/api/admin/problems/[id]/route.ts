@@ -8,9 +8,10 @@ import { headers } from "next/headers";
 // PUT /api/admin/problems/[id] - Update a problem
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -73,7 +74,7 @@ export async function PUT(
         difficulty,
         updatedAt: new Date(),
       })
-      .where(eq(problems.id, params.id))
+      .where(eq(problems.id, id))
       .returning();
 
     if (updatedProblem.length === 0) {
@@ -95,7 +96,7 @@ export async function PUT(
       })
       .from(problems)
       .leftJoin(topics, eq(problems.topicId, topics.id))
-      .where(eq(problems.id, params.id))
+      .where(eq(problems.id, id))
       .limit(1);
 
     return NextResponse.json(problemWithTopic[0]);
@@ -120,9 +121,10 @@ export async function PUT(
 // DELETE /api/admin/problems/[id] - Delete a problem
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -133,7 +135,7 @@ export async function DELETE(
 
     const deletedProblem = await db
       .delete(problems)
-      .where(eq(problems.id, params.id))
+      .where(eq(problems.id, id))
       .returning();
 
     if (deletedProblem.length === 0) {
