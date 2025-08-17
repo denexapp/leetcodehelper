@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import getSession from "@/lib/auth/getSession";
+import checkAdmin from "@/lib/auth/checkAdmin";
 import { redirect } from "next/navigation";
 import TopicsManager from "@/components/admin/TopicsManager";
 import ProblemsManager from "@/components/admin/ProblemsManager";
@@ -11,8 +12,11 @@ export default async function AdminPage() {
     redirect("/unauthorized");
   }
 
-  // TODO: Add admin role check here when roles are implemented
-  // For now, any authenticated user can access admin
+  const isAdmin = await checkAdmin();
+  
+  if (!isAdmin) {
+    redirect("/unauthorized");
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">

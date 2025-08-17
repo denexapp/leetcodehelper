@@ -1,10 +1,12 @@
 import Link from "next/link";
 import getSession from "@/lib/auth/getSession";
+import checkAdmin from "@/lib/auth/checkAdmin";
 import SignInButton from "@/components/SignInButton";
 import SignOutButton from "@/components/SignOutButton";
 
 export default async function Header() {
   const session = await getSession();
+  const isAdmin = await checkAdmin();
 
   return (
     <header className="border-b border-gray-200 dark:border-gray-700">
@@ -26,12 +28,14 @@ export default async function Header() {
                 >
                   My Attempts
                 </Link>
-                <Link
-                  href="/admin"
-                  className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  Admin
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    Admin
+                  </Link>
+                )}
               </nav>
             )}
           </div>

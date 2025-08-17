@@ -2,56 +2,54 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/db";
 import { problems, topics } from "@/lib/db/schemas/leetcode";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/auth/adminCheck";
 
 // GET /api/admin/problems - Get all problems with topic information
 export async function GET() {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const allProblems = await db
+    await requireAdmin();
+    
+    const problemsWithTopics = await db
       .select({
         id: problems.id,
         title: problems.title,
-        url: problems.url,
-        status: problems.status,
-        topicId: problems.topicId,
         difficulty: problems.difficulty,
+        url: problems.url,
+        topicId: problems.topicId,
+        topicName: topics.name,
         createdAt: problems.createdAt,
         updatedAt: problems.updatedAt,
-        topicName: topics.name,
       })
       .from(problems)
       .leftJoin(topics, eq(problems.topicId, topics.id))
       .orderBy(problems.createdAt);
-    
-    return NextResponse.json(allProblems);
+
+    return NextResponse.json(problemsWithTopics);
   } catch (error) {
+    if (error instanceof Error && error.message.includes('UNAUTHORIZED')) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('FORBIDDEN')) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     console.error("Error fetching problems:", error);
     return NextResponse.json(
-      { error: "Failed to fetch problems" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
-}
-
-// POST /api/admin/problems - Create a new problem
+}// POST /api/admin/problems - Create a new problem
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin();
 
     const { title, url, topicId, difficulty } = await request.json();
 
@@ -134,6 +132,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(createdProblem[0], { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message.includes('UNAUTHORIZED')) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('FORBIDDEN')) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     console.error("Error creating problem:", error);
     
     // Handle unique constraint violation

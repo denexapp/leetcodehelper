@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/db";
 import { topics } from "@/lib/db/schemas/leetcode";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/auth/adminCheck";
 
 // PUT /api/admin/topics/[id] - Update a topic
 export async function PUT(
@@ -11,14 +10,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireAdmin();
     const { id } = await params;
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { name } = await request.json();
 
@@ -44,6 +37,20 @@ export async function PUT(
 
     return NextResponse.json(updatedTopic[0]);
   } catch (error) {
+    if (error instanceof Error && error.message.includes('UNAUTHORIZED')) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('FORBIDDEN')) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     console.error("Error updating topic:", error);
     
     // Handle unique constraint violation
@@ -67,14 +74,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireAdmin();
     const { id } = await params;
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const deletedTopic = await db
       .delete(topics)
@@ -87,6 +88,20 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Error && error.message.includes('UNAUTHORIZED')) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('FORBIDDEN')) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     console.error("Error deleting topic:", error);
     return NextResponse.json(
       { error: "Failed to delete topic" },

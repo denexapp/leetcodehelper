@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/db";
 import { topics } from "@/lib/db/schemas/leetcode";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/auth/adminCheck";
 
 // GET /api/admin/topics - Get all topics
 export async function GET() {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin();
 
     const allTopics = await db.select().from(topics).orderBy(topics.createdAt);
     
     return NextResponse.json(allTopics);
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      if (error.message === "FORBIDDEN") {
+        return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      }
+    }
     console.error("Error fetching topics:", error);
     return NextResponse.json(
       { error: "Failed to fetch topics" },
@@ -30,13 +31,7 @@ export async function GET() {
 // POST /api/admin/topics - Create a new topic
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin();
 
     const { name } = await request.json();
 
@@ -61,6 +56,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newTopic, { status: 201 });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      if (error.message === "FORBIDDEN") {
+        return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      }
+    }
     console.error("Error creating topic:", error);
     
     // Handle unique constraint violation
