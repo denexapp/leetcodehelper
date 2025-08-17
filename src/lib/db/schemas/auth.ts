@@ -3,7 +3,6 @@ import {
   text,
   timestamp,
   boolean,
-  integer,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -64,20 +63,4 @@ export const verifications = pgTable("verifications", {
   updatedAt: timestamp("updated_at").$defaultFn(
     () => /* @__PURE__ */ new Date(),
   ),
-});
-
-export const passkeys = pgTable("passkeys", {
-  id: text("id").primaryKey(),
-  name: text("name"),
-  publicKey: text("public_key").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  credentialID: text("credential_i_d").notNull(),
-  counter: integer("counter").notNull(),
-  deviceType: text("device_type").notNull(),
-  backedUp: boolean("backed_up").notNull(),
-  transports: text("transports"),
-  createdAt: timestamp("created_at"),
-  aaguid: text("aaguid"),
 });
