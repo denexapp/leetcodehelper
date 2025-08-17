@@ -125,6 +125,27 @@ auth.users (1) ──── (many) notes
 
 ## Future Considerations
 
+### Task Queue Algorithm
+The application implements an intelligent task queue system that prioritizes problems based on:
+
+1. **Difficulty Priority**: Easy → Medium → Hard
+2. **Attempt Status**: Never attempted → Attempted but not solved → Due for review
+3. **Spaced Repetition**: Problems reappear based on solved count and time intervals
+
+**Spaced Repetition Intervals**:
+- Easy problems: 5, 10, 30, 30, 50, 50 days
+- Medium/Hard problems: 3, 5, 10, 20, 30, 40, 50, 50 days
+
+**Priority Algorithm**:
+1. Generate base priority from difficulty (easy=100, medium=200, hard=300)
+2. Add weight based on status:
+   - Never attempted: +1000
+   - Attempted but not solved: +900
+   - Overdue for review: +850 - days_overdue
+   - Due for review today: +800
+   - Future review: +400
+3. Sort by priority (lower = higher priority), then by problem ID
+
 ### Potential Enhancements
 1. **Tags System**: Add many-to-many relationship between problems and tags
 2. **Difficulty Scoring**: Add numeric difficulty scores in addition to easy/medium/hard
