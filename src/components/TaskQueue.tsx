@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { TaskQueueItem } from "@/lib/taskQueue";
+import QuickAttemptModal from "@/components/QuickAttemptModal";
 
 interface TaskQueueStats {
   total: number;
@@ -25,6 +26,8 @@ export default function TaskQueue() {
   const [data, setData] = useState<TaskQueueResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskQueueItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTaskQueue();
@@ -49,6 +52,21 @@ export default function TaskQueue() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickAttempt = (task: TaskQueueItem) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleAttemptAdded = () => {
+    // Refresh the task queue after adding an attempt
+    fetchTaskQueue();
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -216,6 +234,12 @@ export default function TaskQueue() {
               </div>
               
               <div className="flex gap-2 ml-4">
+                <button
+                  onClick={() => handleQuickAttempt(task)}
+                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                >
+                  Quick Attempt
+                </button>
                 <a
                   href={task.problem.url}
                   target="_blank"
@@ -236,6 +260,16 @@ export default function TaskQueue() {
             Showing top 20 tasks. {taskQueue.length - 20} more in queue.
           </p>
         </div>
+      )}
+
+      {/* Quick Attempt Modal */}
+      {selectedTask && (
+        <QuickAttemptModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          task={selectedTask}
+          onAttemptAdded={handleAttemptAdded}
+        />
       )}
     </div>
   );
