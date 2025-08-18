@@ -185,8 +185,36 @@ export function getActiveTaskQueue(
 ): TaskQueueItem[] {
   const fullQueue = generateTaskQueue(problems, attempts);
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Group attempts by problem ID for easier lookup
+  const attemptsByProblem = attempts.reduce((acc, attempt) => {
+    if (!acc[attempt.problemId]) {
+      acc[attempt.problemId] = [];
+    }
+    acc[attempt.problemId].push(attempt);
+    return acc;
+  }, {} as Record<string, Attempt[]>);
 
   return fullQueue.filter(task => {
+    const problemAttempts = attemptsByProblem[task.problem.id] || [];
+    
+    // Check if there was an attempt today that was not solved solo
+    const todayAttempts = problemAttempts.filter(attempt => {
+      const attemptDate = new Date(attempt.date);
+      const attemptDay = new Date(attemptDate.getFullYear(), attemptDate.getMonth(), attemptDate.getDate());
+      return attemptDay.getTime() === today.getTime();
+    });
+    
+    // Filter out problems that were attempted today but not solved solo
+    // This includes both "solved with help" and "didn't solve at all" cases
+    const attemptedTodayButNotSolo = todayAttempts.some(attempt => !attempt.solvedSolo);
+    
+    // Filter out problems that were attempted today but not solved solo
+    if (attemptedTodayButNotSolo) {
+      return false;
+    }
+
     // Include if never attempted or attempted but not solved
     if (task.solvedCount === 0) {
       return true;
